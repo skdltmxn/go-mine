@@ -1,4 +1,4 @@
-package server
+package crypto
 
 import (
 	"crypto/cipher"
@@ -6,10 +6,9 @@ import (
 
 // same struct used in crypto/cipher
 type cfb8 struct {
-	b       cipher.Block
-	next    []byte
-	out     []byte
-	outUsed int
+	b    cipher.Block
+	next []byte
+	out  []byte
 
 	decrypt bool
 }
@@ -35,11 +34,11 @@ func (x *cfb8) XORKeyStream(dst, src []byte) {
 	}
 }
 
-func newCFB8Encrypter(block cipher.Block, iv []byte) cipher.Stream {
+func NewCFB8Encrypter(block cipher.Block, iv []byte) cipher.Stream {
 	return newCFB8(block, iv, false)
 }
 
-func newCFB8Decrypter(block cipher.Block, iv []byte) cipher.Stream {
+func NewCFB8Decrypter(block cipher.Block, iv []byte) cipher.Stream {
 	return newCFB8(block, iv, true)
 }
 
@@ -53,7 +52,6 @@ func newCFB8(block cipher.Block, iv []byte, decrypt bool) cipher.Stream {
 		b:       block,
 		out:     make([]byte, blockSize),
 		next:    make([]byte, blockSize),
-		outUsed: blockSize,
 		decrypt: decrypt,
 	}
 	copy(x.next, iv)

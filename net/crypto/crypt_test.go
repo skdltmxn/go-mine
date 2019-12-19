@@ -1,4 +1,4 @@
-package server
+package crypto
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ func TestAESCFB8(t *testing.T) {
 	cipher := make([]byte, len(plain))
 
 	// key == iv
-	cfb := newCFB8Encrypter(block, key)
+	cfb := NewCFB8Encrypter(block, key)
 
 	// encrypt
 	cfb.XORKeyStream(cipher, plain)

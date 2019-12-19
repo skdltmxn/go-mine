@@ -3,6 +3,7 @@ package net
 import (
 	"bufio"
 	"bytes"
+	"crypto/cipher"
 	"net"
 	"sync"
 
@@ -14,20 +15,22 @@ const (
 	SessionStateLogin  = 2
 )
 
-type Session struct {
-	conn   net.Conn
-	buffer bytes.Buffer
-	eof    bool
-	m      sync.Mutex
-	state  int
+type SessionCryptor struct {
+	encrypter cipher.Stream
+	decrypter cipher.Stream
 }
 
-func newSession(conn net.Conn) *Session {
-	return &Session{
-		conn:  conn,
-		eof:   false,
-		state: SessionStateStatus,
-	}
+type Session struct {
+	conn    net.Conn
+	buffer  bytes.Buffer
+	eof     bool
+	m       sync.Mutex
+	state   int
+	cryptor *SessionCryptor
+}
+
+func (sess *Session) SetCryptor(encrypter, decrypter cipher.Stream) {
+	sess.cryptor = &SessionCryptor{encrypter, decrypter}
 }
 
 func (sess *Session) State() int {
@@ -46,7 +49,19 @@ func (sess *Session) Close() {
 }
 
 func (sess *Session) SendData(data []byte) (int, error) {
+	if sess.cryptor != nil {
+		sess.cryptor.encrypter.XORKeyStream(data, data)
+	}
 	return sess.conn.Write(data)
+}
+
+func newSession(conn net.Conn) *Session {
+	return &Session{
+		conn:    conn,
+		eof:     false,
+		state:   SessionStateStatus,
+		cryptor: nil,
+	}
 }
 
 func (sess *Session) receiveData() {
@@ -58,6 +73,10 @@ func (sess *Session) receiveData() {
 		if err != nil {
 			sess.eof = true
 			break
+		}
+
+		if sess.cryptor != nil {
+			sess.cryptor.decrypter.XORKeyStream(t[:n], t[:n])
 		}
 
 		sess.m.Lock()

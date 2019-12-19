@@ -2,7 +2,6 @@ package server
 
 import (
 	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -10,15 +9,14 @@ import (
 	"log"
 
 	"github.com/skdltmxn/go-mine/net"
+	"github.com/skdltmxn/go-mine/net/crypto"
 	"github.com/skdltmxn/go-mine/net/packet"
 )
 
 type GameContext struct {
-	privKey   *rsa.PrivateKey
-	pubKey    *rsa.PublicKey
-	encrypter cipher.Stream
-	decrypter cipher.Stream
-	name      string
+	privKey *rsa.PrivateKey
+	pubKey  *rsa.PublicKey
+	name    string
 }
 
 type LoginServer struct {
@@ -69,9 +67,9 @@ func (d *LoginServer) Dispatch(sess *net.Session, p *packet.Packet) bool {
 
 		sess.SendData(res.Raw())
 		d.sessMap[sess] = &GameContext{
-			privKey: rsaPrivKey,
-			pubKey:  rsaPubKey,
-			name:    name,
+			rsaPrivKey,
+			rsaPubKey,
+			name,
 		}
 	} else if packetId == 1 {
 		r := packet.NewReader(p)
@@ -111,18 +109,32 @@ func (d *LoginServer) Dispatch(sess *net.Session, p *packet.Packet) bool {
 			return true
 		}
 
-		ctx.encrypter = newCFB8Encrypter(block, plainSecret)
-		ctx.decrypter = newCFB8Decrypter(block, plainSecret)
+		encrypter := crypto.NewCFB8Encrypter(block, plainSecret)
+		decrypter := crypto.NewCFB8Decrypter(block, plainSecret)
+		sess.SetCryptor(encrypter, decrypter)
 
+		// Login Success
 		successPacket := packet.NewPacket(2)
 		w := packet.NewWriter(successPacket)
 		w.WriteString(authResult.Id)
 		w.WriteString(authResult.Name)
 
-		successPacketRaw := successPacket.Raw()
-		res := make([]byte, len(successPacketRaw))
-		ctx.encrypter.XORKeyStream(res, successPacketRaw)
-		sess.SendData(res)
+		sess.SendData(successPacket.Raw())
+
+		// Join Game
+		joinGamePacket := packet.NewPacket(0x26)
+		w = packet.NewWriter(joinGamePacket)
+		w.WriteInt(0)
+		w.WriteUbyte(1)
+		w.WriteInt(0)
+		w.WriteLong(0xabbccddeeff0102)
+		w.WriteUbyte(0)
+		w.WriteString("default")
+		w.WriteVarint(32)
+		w.WriteBool(false)
+		w.WriteBool(true)
+
+		sess.SendData(joinGamePacket.Raw())
 	}
 
 	return true

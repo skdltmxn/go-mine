@@ -28,11 +28,11 @@ func (w *Writer) WriteBool(v bool) error {
 	return binary.Write(w, binary.BigEndian, &v)
 }
 
-func (w *Writer) WriteInt8(v int8) error {
+func (w *Writer) WriteByte(v int8) error {
 	return binary.Write(w, binary.BigEndian, &v)
 }
 
-func (w *Writer) WriteUint8(v uint8) error {
+func (w *Writer) WriteUbyte(v uint8) error {
 	return binary.Write(w, binary.BigEndian, &v)
 }
 

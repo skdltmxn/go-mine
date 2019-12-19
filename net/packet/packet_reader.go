@@ -36,12 +36,12 @@ func (reader *Reader) ReadBoolean() (value bool, err error) {
 	return
 }
 
-func (reader *Reader) ReadInt8() (value int8, err error) {
+func (reader *Reader) ReadByte() (value int8, err error) {
 	err = binary.Read(reader, binary.BigEndian, &value)
 	return
 }
 
-func (reader *Reader) ReadUint8() (value uint8, err error) {
+func (reader *Reader) ReadUbyte() (value uint8, err error) {
 	err = binary.Read(reader, binary.BigEndian, &value)
 	return
 }

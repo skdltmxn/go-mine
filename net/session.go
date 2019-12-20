@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	SessionStateStatus = 1
-	SessionStateLogin  = 2
+	SessionStateStatus = iota
+	SessionStateLogin
+	SessionStateGame
 )
 
 type SessionCryptor struct {
@@ -38,7 +39,7 @@ func (sess *Session) State() int {
 }
 
 func (sess *Session) SetState(newState int) {
-	if newState > SessionStateLogin {
+	if newState > SessionStateGame {
 		newState = SessionStateStatus
 	}
 	sess.state = newState
@@ -48,7 +49,8 @@ func (sess *Session) Close() {
 	sess.conn.Close()
 }
 
-func (sess *Session) SendData(data []byte) (int, error) {
+func (sess *Session) SendPacket(p *packet.Packet) (int, error) {
+	data := p.Raw()
 	if sess.cryptor != nil {
 		sess.cryptor.encrypter.XORKeyStream(data, data)
 	}

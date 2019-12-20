@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/hex"
 	"log"
 
 	"github.com/skdltmxn/go-mine/net"
@@ -20,7 +19,7 @@ func (d *HandshakeServer) Dispatch(sess *net.Session, p *packet.Packet) bool {
 		return false
 	}
 
-	log.Printf("HandshakeServer got packet %d / %+v", p.Id(), hex.EncodeToString(p.Data()))
+	//log.Printf("HandshakeServer got packet %d / %+v", p.Id(), hex.EncodeToString(p.Data()))
 
 	if p.Id() == 0 {
 		r := packet.NewReader(p)
@@ -29,6 +28,12 @@ func (d *HandshakeServer) Dispatch(sess *net.Session, p *packet.Packet) bool {
 		serverAddress, _ := r.ReadString()
 		serverPort, _ := r.ReadUshort()
 		nextState, _ := r.ReadVarint()
+
+		if protocolVersion < 575 {
+			log.Printf("Protocol version incompatible: %d", protocolVersion)
+			sess.Close()
+			return true
+		}
 
 		log.Printf("protocol: %d server: %s port: %d state: %d", protocolVersion, serverAddress, serverPort, nextState)
 		sess.SetState(net.SessionStateLogin)
